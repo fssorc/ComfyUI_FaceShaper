@@ -1,0 +1,283 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "FaceShaperModels",
+      "pos": [
+        1317,
+        550
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "FaceShaper_MODELS",
+          "type": "FaceShaper_MODELS",
+          "links": [
+            4
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FaceShaperModels"
+      },
+      "widgets_values": [
+        81
+      ]
+    },
+    {
+      "id": 6,
+      "type": "FaceShaper",
+      "pos": [
+        1307,
+        660
+      ],
+      "size": {
+        "0": 342.5999755859375,
+        "1": 122
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "analysis_models",
+          "type": "FaceShaper_MODELS",
+          "link": 4
+        },
+        {
+          "name": "imageFrom",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "imageTo",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Image1",
+          "type": "IMAGE",
+          "links": [
+            2
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "LandmarkImg",
+          "type": "IMAGE",
+          "links": [
+            3
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FaceShaper"
+      },
+      "widgets_values": [
+        "ALL",
+        "Height"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [
+        1040,
+        740
+      ],
+      "size": {
+        "0": 250,
+        "1": 340
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7
+          ],
+          "shape": 3,
+          "label": "图像",
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3,
+          "label": "遮罩"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "andy.png",
+        "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        1020,
+        340
+      ],
+      "size": {
+        "0": 250,
+        "1": 340
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ],
+          "shape": 3,
+          "label": "图像",
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3,
+          "label": "遮罩"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "zhouxingchi.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "PreviewImage",
+      "pos": [
+        1680,
+        360
+      ],
+      "size": {
+        "0": 210,
+        "1": 250
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [
+        1680,
+        740
+      ],
+      "size": {
+        "0": 210,
+        "1": 250
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    }
+  ],
+  "links": [
+    [
+      2,
+      6,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      6,
+      1,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      3,
+      0,
+      6,
+      0,
+      "FaceShaper_MODELS"
+    ],
+    [
+      5,
+      2,
+      0,
+      6,
+      1,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      6,
+      2,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.620921323059155,
+      "offset": [
+        -108.44051999999989,
+        -135.96136999999987
+      ]
+    }
+  },
+  "version": 0.4
+}
