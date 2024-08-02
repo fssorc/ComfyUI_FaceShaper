@@ -9,22 +9,29 @@ Face-swapping tools typically only replace facial features during the swap, with
 This project is a small script that can first liquefy and stretch the face in the original photo according to the horizontal and vertical proportions of the target person's facial contour. The resulting image can be used as input for other face-swapping nodes.
 
 ## Installation
-run in ComfyUI/custom_nodes:
-git clone https://github.com/fssorc/ComfyUI_FaceShaper
-You need to install Dlib
+run in ComfyUI/custom_nodes:  
+git clone https://github.com/fssorc/ComfyUI_FaceShaper  
+You need to install Dlib  
 
-For DLIB download [Shape Predictor](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/shape_predictor_68_face_landmarks.dat?download=true), [Face Predictor 5 landmarks](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/shape_predictor_5_face_landmarks.dat?download=true), [Face Predictor 81 landmarks](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/shape_predictor_81_face_landmarks.dat?download=true) and the [Face Recognition](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/dlib_face_recognition_resnet_model_v1.dat?download=true) models and place them into the `dlib` directory.
+For DLIB download [Shape Predictor](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/shape_predictor_68_face_landmarks.dat?download=true),  
+[Face Predictor 5 landmarks](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/shape_predictor_5_face_landmarks.dat?download=true),  
+[Face Predictor 81 landmarks](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/shape_predictor_81_face_landmarks.dat?download=true)   
+and the [Face Recognition](https://huggingface.co/matt3ounstable/dlib_predictor_recognition/resolve/main/dlib_face_recognition_resnet_model_v1.dat?download=true)   
+models and place them into the `dlib` directory.  
 
-Precompiled Dlib for Windows can be found [here](https://github.com/z-mahmud22/Dlib_Windows_Python3.x).
+if you get error when installing Dlib, try this:  
+Precompiled Dlib for Windows can be found [here](https://github.com/z-mahmud22/Dlib_Windows_Python3.x).  
 
-put dlib model files in ComfyUI/models/dlib/
-shape_predictor_68_face_landmarks.dat
-shape_predictor_81_face_landmarks.dat
-shape_predictor_5_face_landmarks.dat
+put dlib model files in ComfyUI/models/dlib/  
+shape_predictor_68_face_landmarks.dat  
+shape_predictor_81_face_landmarks.dat  
+shape_predictor_5_face_landmarks.dat  
 
 ## Test Results:
-the faceSwap tool I am using is [instantId](https://github.com/cubiq/ComfyUI_InstantID) and [DZ_FaceDetailer](https://github.com/nicofdga/DZ-FaceDetailer)
+the faceSwap tool I am using is [instantId](https://github.com/cubiq/ComfyUI_InstantID) and [DZ_FaceDetailer](https://github.com/nicofdga/DZ-FaceDetailer)  
 ![Image](./TestResult.png)
 
-## Thank you !!
+Added whole faceswapping workflow.  
+
+## Thank you !!  
 While writing the code, I was inspired by [ComfyUI_FaceAnalysis](https://github.com/cubiq/ComfyUI_FaceAnalysis), and I would like to express my gratitude here.
