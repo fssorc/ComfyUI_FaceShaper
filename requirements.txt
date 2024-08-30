@@ -1,2 +1,8 @@
 opencv-python
-dlib
+pyyaml
+numpy<=1.26.4
+onnxruntime-gpu
+pykalman
+mediapipe
+onnx2torch
+
