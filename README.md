@@ -19,6 +19,7 @@ V2版本，可以在不安装dlib的情况下使用。You can run V2 without dli
 
 ## dlib替代方案 replacement for dlib
 参考了[ComfyUI-LivePortraitKJ](https://github.com/kijai/ComfyUI-LivePortraitKJ)的代码，可以选择使用 face-alignment, MediaPipe或者insightFace
+
 legacy节点保持原有逻辑，如果安装了dlib可以继续使用
 
 It references the code from [ComfyUI-LivePortraitKJ](https://github.com/kijai/ComfyUI-LivePortraitKJ), where you can choose to use face-alignment, MediaPipe, or insightFace.
