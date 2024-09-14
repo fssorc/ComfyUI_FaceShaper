@@ -6,6 +6,8 @@ except ImportError:
     pass
 
 import torch
+#import torch.nn.functional as F
+import torchvision.transforms.v2 as T
 import numpy as np
 import comfy.utils
 import comfy.model_management as mm
@@ -275,7 +277,7 @@ class FaceShaperModels:
 
 
 
-def draw_landmarks(image, landmarks, color=(255, 0, 0), radius=3):
+def draw_pointsOnImg(image, landmarks, color=(255, 0, 0), radius=3):
         # cv2.circle打坐标点的坐标系，如下。左上角是原点，先写x再写y
         #  (0,0)-------------(w,0)
         #  |                  |
@@ -289,7 +291,7 @@ def draw_landmarks(image, landmarks, color=(255, 0, 0), radius=3):
                 pass
     return image_cpy
 
-def write_landmarks(image, landmarks, color=(255, 0, 0), fontsize=0.25):
+def write_pointsOnImg(image, landmarks, color=(255, 0, 0), fontsize=0.25):
     font = cv2.FONT_HERSHEY_SIMPLEX
     image_cpy = image.copy()
     for n in range(landmarks.shape[0]):
@@ -299,6 +301,51 @@ def write_landmarks(image, landmarks, color=(255, 0, 0), fontsize=0.25):
         except:
                 pass
     return image_cpy
+
+def drawLineBetweenPoints(image, pointsA, pointsB, color=(255, 0, 0), thickness=1):
+    image_cpy = image.copy()
+    for n in range(pointsA.shape[0]):
+        try:
+            cv2.line(image_cpy, (int(pointsA[n][0]), int(pointsA[n][1])), (int(pointsB[n][0]), int(pointsB[n][1])), color, thickness)                        
+        except:
+            pass
+    return image_cpy
+
+def tensor_to_image(image):
+    return np.array(T.ToPILImage()(image.permute(2, 0, 1)).convert('RGB'))
+
+def image_to_tensor(image):
+    return T.ToTensor()(image).permute(1, 2, 0)
+    #return T.ToTensor()(Image.fromarray(image)).permute(1, 2, 0)
+
+def mask_from_landmarks(height, width, landmarks):
+    #import cv2
+    mask = np.zeros((height, width), dtype=np.float64)
+    points = cv2.convexHull(landmarks)
+    points = np.array(points, dtype=np.int32)
+    cv2.fillConvexPoly(mask, points, color=1)
+    return mask
+
+def expand_mask(mask, expand, tapered_corners):
+    import scipy
+
+    c = 0 if tapered_corners else 1
+    kernel = np.array([[c, 1, c],
+                       [1, 1, 1],
+                       [c, 1, c]])
+    mask = mask.reshape((-1, mask.shape[-2], mask.shape[-1]))
+    out = []
+    for m in mask:
+        output = m.numpy()
+        for _ in range(abs(expand)):
+            if expand < 0:
+                output = scipy.ndimage.grey_erosion(output, footprint=kernel)
+            else:
+                output = scipy.ndimage.grey_dilation(output, footprint=kernel)
+        output = torch.from_numpy(output)
+        out.append(output)
+
+    return torch.stack(out, dim=0)
 
 class FaceShaper:
     def __init__(self):
@@ -371,10 +418,12 @@ class FaceShaperShowLandMarks:
         #output=[]
         lmk = crop_info["crop_info_list"][0]['lmk_source']
         height, width = crop_info["crop_info_list"][0]['input_image_size']
-        img1=self.draw203keypoints(lmk, landmark_lines, sourceImg,height, width)
+        img1=self.draw203keypoints(lmk, landmark_lines, sourceImg,height, width,writeIndexOnKeyPoints)
         #output.append(img1)
         lmk_crop = crop_info["crop_info_list"][0]['lmk_crop']
-        img2=self.draw203keypoints(lmk_crop, landmark_lines, croppedImg,512,512)
+
+        dsize = crop_info["crop_info_list"][0]['dsize']
+        img2=self.draw203keypoints(lmk_crop, landmark_lines, croppedImg,dsize,dsize,writeIndexOnKeyPoints)
         #output.append(img2)
         if writeIndexOnKeyPoints:
             img3 = (self.writePt_crop(crop_info,croppedImg, fontSize,rescaleCroppedImg))
@@ -382,7 +431,7 @@ class FaceShaperShowLandMarks:
         else:
             img3=(self.drawPt_crop(crop_info,croppedImg,rescaleCroppedImg))
 
-        print("img3",img3.shape) #it is torch.Size([1, 1024, 1024, 3])
+        #print("img3",img3.shape) #it is torch.Size([1, 1024, 1024, 3])
         output=[]
         output.append(img1)
         output.append(img2)
@@ -390,7 +439,7 @@ class FaceShaperShowLandMarks:
         return (output)
         
 
-    def draw203keypoints(self, lmk, draw_lines, sourceImg,height,width):
+    def draw203keypoints(self, lmk, draw_lines, sourceImg,height,width,writeIndex):
         #           left upper eye | left lower eye | right upper eye | right lower eye | upper lip top | lower lip bottom | upper lip bottom | lower lip top | jawline         | left eyebrow | right eyebrow | nose            | left pupil    | right pupil  |  nose center
         indices = [                  12,               24,              37,               48,             66,                85,                96,             108,              145,           165,            185,             197,             198,            199,          203]
         colorlut = [(0, 0, 255),     (0, 255, 0),     (0, 0, 255),      (0, 255, 0),      (255, 0, 0),    (255, 0, 255),     (255, 255, 0),     (0, 255, 255),  (128, 128, 128), (128, 128, 0), (128, 128, 0),   (0,128,128),    (255, 255,255),   (255, 255,255), (255,255,255)]
@@ -424,6 +473,8 @@ class FaceShaperShowLandMarks:
         else:
             for index, (x, y) in enumerate(keypoints):
                 cv2.circle(target_image, (int(x), int(y)), radius=1, thickness=-1, color=colors[index])
+                if(writeIndex):
+                    cv2.putText(target_image, str(index), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
         
         #keypoints_image = cv2.cvtColor(blank_image, cv2.COLOR_BGR2RGB)
         return torch.from_numpy(target_image.astype(np.float32) / 255.0).unsqueeze(0) 
@@ -443,9 +494,9 @@ class FaceShaperShowLandMarks:
                     inputImg = cv2.resize(croppedImg[c], (ImageSize, ImageSize), interpolation=cv2.INTER_AREA)
                     keys = crop['pt_crop'].copy()
                     keys = keys * (ImageSize / 512)
-                    mark_img = draw_landmarks(inputImg, keys, color=(255, 0, 0),radius=3)
+                    mark_img = draw_pointsOnImg(inputImg, keys, color=(255, 0, 0),radius=3)
                 else:
-                    mark_img = draw_landmarks(croppedImg[c], crop['pt_crop'], color=(255, 0, 0),radius=3)
+                    mark_img = draw_pointsOnImg(croppedImg[c], crop['pt_crop'], color=(255, 0, 0),radius=3)
             else:
                 mark_img = croppedImg[c].copy()
             c += 1
@@ -465,9 +516,9 @@ class FaceShaperShowLandMarks:
                     inputImg = cv2.resize(croppedImg[c], (ImageSize, ImageSize), interpolation=cv2.INTER_AREA)
                     keys = crop['lmk_crop'].copy()
                     keys = keys * (ImageSize / 512)
-                    mark_img = write_landmarks(inputImg, keys, color=(255, 0, 0),fontsize=fontSize)
+                    mark_img = write_pointsOnImg(inputImg, keys, color=(255, 0, 0),fontsize=fontSize)
                 else:
-                    mark_img = write_landmarks(croppedImg[c].copy(), crop['lmk_crop'], color=(255, 0, 0),fontsize=fontSize)
+                    mark_img = write_pointsOnImg(croppedImg[c].copy(), crop['lmk_crop'], color=(255, 0, 0),fontsize=fontSize)
             else:
                 mark_img = croppedImg[c].copy()
             c += 1
@@ -599,7 +650,7 @@ class FaceShaperCropper:
         return {"required": {
             "cropper": ("FSMCROPPER",),
             "source_image": ("IMAGE",),
-            #"dsize": ("INT", {"default": 512, "min": 64, "max": 2048}),
+            "dsize": ("INT", {"default": 512, "min": 64, "max": 2048}),
             "scale": ("FLOAT", {"default": 2.3, "min": 1.0, "max": 4.0, "step": 0.01}),
             "vx_ratio": ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.001}),
             "vy_ratio": ("FLOAT", {"default": -0.125, "min": -1.0, "max": 1.0, "step": 0.001}),
@@ -624,7 +675,7 @@ class FaceShaperCropper:
     FUNCTION = "process"
     CATEGORY = "FaceShaper"
 
-    def process(self, cropper, source_image, scale, vx_ratio, vy_ratio, face_index, face_index_order, rotate):
+    def process(self, cropper, source_image, dsize,scale, vx_ratio, vy_ratio, face_index, face_index_order, rotate):
         source_image_np = (source_image.contiguous() * 255).byte().numpy()
 
         # Initialize lists
@@ -637,7 +688,7 @@ class FaceShaperCropper:
 
         #KJ原版代码里，这个值是输入参数，取值范围64-2048，默认512
         #会影响后面的composite操作。本人来不及修改后面的composite操作，所以这里直接写死512
-        dsize = 512
+        #dsize = 512
         # Initialize a progress bar for the combined operation
         pbar = comfy.utils.ProgressBar(len(source_image_np))
         for i in tqdm(range(len(source_image_np)), desc='Detecting, cropping, and processing..', total=len(source_image_np)):
@@ -646,9 +697,11 @@ class FaceShaperCropper:
             
             # Processing source images
             if crop_info:
+                crop_info['dsize'] = dsize
                 crop_info_list.append(crop_info)
 
                 cropped_images_list.append(cropped_image)
+
                 # f_s_list.append(None)
                 # x_s_list.append(None)
                 # source_info.append(None)
@@ -675,7 +728,7 @@ class FaceShaperCropper:
         ####     ['lmk_source'] 标准化的203个关键点，在sourceImage上的位置
         ####     ['lmk_crop'] 标准化的203个关键点，在cropped Image上的位置
         ####     ['input_image_size'] source image size
-
+        ####     ['dsize'] cropped image size--
         cropped_tensors_out = (
             torch.stack([torch.from_numpy(np_array) for np_array in cropped_images_list])
             / 255
@@ -760,12 +813,12 @@ class FaceShaperComposite:
 
             #if mismatch_method == "cut":
             source_frame = source_image[safe_index].unsqueeze(0).to(device)
-            print("source_frame.shape", source_frame.shape)
+            #print("source_frame.shape", source_frame.shape)
             #else:
             #    source_frame = _get_source_frame(source_image, i, mismatch_method).unsqueeze(0).to(device)
 
             croppedImage = cropped_image[safe_index].unsqueeze(0).to(device)
-            print("cropped_image.shape", cropped_image.shape)
+            #print("cropped_image.shape", cropped_image.shape)
             #if not :
             #    composited_image_list.append(source_frame.cpu())
             #    out_mask_list.append(torch.zeros((1, 3, H, W), device="cpu"))
@@ -779,14 +832,14 @@ class FaceShaperComposite:
                 dsize=(W, H),
                 device=device
                 )
-            print("cropped_image_to_original.shape", cropped_image_to_original.shape)
+            #print("cropped_image_to_original.shape", cropped_image_to_original.shape)
             mask_ori = _transform_img_kornia(
                 crop_mask[0].unsqueeze(0),
                 crop_info["crop_info_list"][safe_index]["M_c2o"],
                 dsize=(W, H),
                 device=device
                 )
-            print("mask_ori.shape", mask_ori.shape)
+            #print("mask_ori.shape", mask_ori.shape)
             cropped_image_to_original_blend = torch.clip(
                     mask_ori * cropped_image_to_original + (1 - mask_ori) * source_frame, 0, 1
                     )
@@ -842,7 +895,7 @@ class FaceShaperMatchV2:
             h=height
             landmarks1 = source_crop_info["crop_info_list"][0]['lmk_crop']
             landmarks2 = target_crop_info["crop_info_list"][0]['lmk_crop']
-            print(len(landmarks1))
+            #print(len(landmarks1))
             #len(lendmarks1) will always be 203
             #V2版本改了检测工具，因此只用203个点
             if landmarkType == "ALL" or AlignType == "Landmarks":
@@ -850,6 +903,10 @@ class FaceShaperMatchV2:
                 rightEye1=np.mean( landmarks1[24:47],axis=0)
                 leftEye2=np.mean( landmarks2[0:23],axis=0)
                 rightEye2=np.mean( landmarks2[24:47],axis=0)
+                jaw1=landmarks1[108:144]
+                jaw2=landmarks2[108:144]
+                centerOfJaw1=np.mean( jaw1,axis=0)
+                centerOfJaw2=np.mean( jaw2,axis=0)
             else:
                 landmarks1 = landmarks1[108:144]
                 landmarks2 = landmarks2[108:144]
@@ -904,12 +961,17 @@ class FaceShaperMatchV2:
                 factor = distance1 / distance2
                 MiddleOfEyes2 = np.array(MiddleOfEyes2)
                 landmarks1_cpy = (landmarks2 - MiddleOfEyes2) * factor + MiddleOfEyes1
+
+                centerOfJaw2 = np.array(centerOfJaw2)
+                jawLineTarget = (landmarks2[108:144] - centerOfJaw2) * factor + centerOfJaw1
+                landmarks1_cpy[108:144] = jawLineTarget
             #不知道原作者为何把这个数组叫src，其实这是变形后的坐标
             src_points = np.append(src_points,landmarks1_cpy,axis=0)
             #print(landmarks1_cpy)
             
-            mark_img = draw_landmarks(image1, dst_points, color=(255, 255, 0),radius=4)
-            mark_img = draw_landmarks(mark_img, src_points, color=(255, 0, 0),radius=3)
+            mark_img = draw_pointsOnImg(image1, dst_points, color=(255, 255, 0),radius=4)
+            mark_img = draw_pointsOnImg(mark_img, src_points, color=(255, 0, 0),radius=3)
+            mark_img = drawLineBetweenPoints(mark_img, dst_points,src_points)
             #mark_img = draw_landmarks(image1, landmarks1, color=(255, 0, 0),radius=3)
             #mark_img2 = draw_landmarks(image1, source_crop_info["crop_info_list"][0]['lmk_crop'], color=(255, 0, 0),radius=3)
             # Create the RBF interpolator instance            
@@ -940,11 +1002,84 @@ class FaceShaperMatchV2:
             output.append(warped_image)
             output.append(mark_img)
             #output.append(mark_img2)
-            print("warped_image",warped_image.shape)
-            print("mark_img",mark_img.shape)
+            #print("warped_image",warped_image.shape)
+            #print("mark_img",mark_img.shape)
     
             return (output)
+    
+class FaceShaperFaceMask:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "crop_info": ("CROPINFO", {"default": []}),
+                #"OnSource": ("BOOLEAN", {"default": False}),
+                "MaskSize": (["Source","Crop"], ),
+                #"image": ("IMAGE", ),
+                #"area": (["face", "main_features", "eyes", "left_eye", "right_eye", "nose", "mouth", "face+forehead (if available)"], ),
+                "grow": ("INT", { "default": 0, "min": -4096, "max": 4096, "step": 1 }),
+                "grow_tapered": ("BOOLEAN", { "default": False }),
+                "blur": ("INT", { "default": 13, "min": 1, "max": 4096, "step": 2 }),
+            }
+        }
 
+    RETURN_TYPES = ("MASK",)
+    RETURN_NAMES = ("mask",)
+    FUNCTION = "segment"
+    CATEGORY = "FaceShaper"
+
+    def segment(self, crop_info, MaskSize,grow, grow_tapered, blur):
+
+#        if (OnSource):
+        if MaskSize=="Source":
+            lmk = crop_info["crop_info_list"][0]['lmk_source']
+            height, width = crop_info["crop_info_list"][0]['input_image_size']
+        else:
+            lmk = crop_info["crop_info_list"][0]['lmk_crop']
+            height = width = crop_info["crop_info_list"][0]['dsize']
+        
+        ####     ['lmk_source'] 标准化的203个关键点，在sourceImage上的位置
+        ####     ['lmk_crop'] 标准化的203个关键点，在cropped Image上的位置
+        ####     ['input_image_size'] source image size（二维）
+        ####     ['dsize'] cropped image size (就一个数，crop后的图是正方形的)
+
+        #out_mask = []
+
+        mask = mask_from_landmarks(height,width, lmk)
+        mask = image_to_tensor(mask).unsqueeze(0).squeeze(-1).clamp(0, 1)
+        _, y, x = torch.where(mask)
+        x1, x2 = x.min().item(), x.max().item()
+        y1, y2 = y.min().item(), y.max().item()
+        smooth = int(min(max((x2 - x1), (y2 - y1)) * 0.2, 99))
+        if smooth > 1:
+            if smooth % 2 == 0:
+                smooth+= 1
+            mask = T.functional.gaussian_blur(mask.bool().unsqueeze(1), smooth).squeeze(1).float()
+        
+        if grow != 0:
+            mask = expand_mask(mask, grow, grow_tapered)
+
+        if blur > 1:
+            if blur % 2 == 0:
+                blur+= 1
+            mask = T.functional.gaussian_blur(mask.unsqueeze(1), blur).squeeze(1).float()
+
+        #print("A -- mask.shape",mask.shape)
+        # A -- mask.shape torch.Size([1, 512, 512])
+
+        return (mask,)
+    ##下面的留着以后改造成同时处理多个crop_info
+        mask = mask.squeeze(0).unsqueeze(-1)        
+        #print("B -- mask.shape",mask.shape)
+        # B -- mask.shape torch.Size([512, 512, 1])        
+        out_mask.append(mask)        
+        out_mask = torch.stack(out_mask).squeeze(-1)
+
+        print("out_mask.shape", out_mask.shape)
+        #out_mask.shape torch.Size([1, 512, 512])
+        print("A -- mask.shape",mask.shape)
+        return (out_mask,) 
+    
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
@@ -957,6 +1092,7 @@ NODE_CLASS_MAPPINGS = {
     "FaceShaperLoadInsightFaceCropper":FaceShaperLoadInsightFaceCropper,
     "FaceShaperLoadMediaPipeCropper":FaceShaperLoadMediaPipeCropper,
     "FaceShaperMatchV2":FaceShaperMatchV2,
+    "FaceShaperFaceMask":FaceShaperFaceMask,
 
 }
 
@@ -971,4 +1107,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
      "FaceShaperLoadInsightFaceCropper": "FaceShaper Load InsightFace",
      "FaceShaperLoadMediaPipeCropper": "FaceShaper Load MediaPipe",
      "FaceShaperV2": "FaceShape Match V2",
+     "FaceShaperFaceMask":"FaceShaper Face Mask"
 }
