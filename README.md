@@ -8,6 +8,7 @@ Face-swapping tools typically only replace facial features during the swap, with
 
 ## 2024/09/19  updated code, add alignType: JawLine. added Node: Face Mask,
 alignType :JawLine can fix face shape between big face and small face
+
 face mask node can generate mask from cropinfo
 
 
