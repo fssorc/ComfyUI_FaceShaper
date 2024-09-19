@@ -6,6 +6,12 @@ Match two faces' shape before using other face swap nodes
 
 Face-swapping tools typically only replace facial features during the swap, without altering the facial shape. When there is a significant difference in facial shape between the target person and the person in the original photo, the result of the face swap is less satisfactory.This project is a small script that can first liquefy and stretch the face in the original photo according to the horizontal and vertical proportions of the target person's facial contour. The resulting image can be used as input for other face-swapping nodes.
 
+## 2024/09/19  updated code, add alignType: JawLine. added Node: Face Mask,
+alignType :JawLine can fix face shape between big face and small face
+face mask node can generate mask from cropinfo
+
+
+
 ## V2
 V2版本为了解决倾斜的脸的问题，把操作分成了三步。首先切割出脸部区域并摆正面部。然后对两张切割出来的图片进行面部形状匹配。最后把处理后的图片贴回到原始图片上。
 你也可以对切割出来的并进行过面部形状匹配的图片进行换脸之后，再贴回原始图片。请尽量尝试各种方案。
