@@ -884,11 +884,27 @@ class FaceShaperMatchV2:
     def LandMark203_to_68(self,source):
         #jawLine
         out = [source[108]]
-        for i in range(0,7):
-            out.append((source[110+i*2]+source[111+i*2])/2)  
+        out.append( (source[108+2]*3 + source[108+3] )/4)
+        out.append((source[108+4]+source[108+5])/2)
+        out.append( (source[108+6] + source[108+7]*3 )/4)
+        out.append(source[108+9])
+        out.append( (source[108+11]*3 + source[108+12] )/4) 
+        out.append((source[108+13]+source[108+14])/2)
+        out.append( (source[108+15] + source[108+16]*3 )/4)
+
+        #for i in range(0,7):
+        #    out.append((source[110+i*2]+source[111+i*2])/2)  
         out.append(source[126])
-        for i in range(0,7):
-            out.append((source[128+i*2]+source[129+i*2])/2)  
+        # for i in range(0,7):
+        #     out.append((source[128+i*2]+source[129+i*2])/2)  
+        out.append( (source[126+2]*3 + source[126+3] )/4)
+        out.append((source[126+4]+source[126+5])/2)
+        out.append( (source[126+6] + source[126+7]*3 )/4)
+        out.append(source[126+9])
+        out.append( (source[126+11]*3 + source[126+12] )/4) 
+        out.append((source[126+13]+source[126+14])/2)
+        out.append( (source[126+15] + source[126+16]*3 )/4)
+
         out.append(source[144])   
         #leftEyeBow
         out.append(source[145])
