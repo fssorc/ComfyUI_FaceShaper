@@ -779,6 +779,13 @@ class FaceShaperComposite:
     CATEGORY = "FaceShaper"
 
     def process(self, source_image, cropped_image, crop_info, mask=None):
+        # Early return if missing critical inputs
+        if cropped_image is None or crop_info is None:
+            log.warning("Missing cropped_image or crop_info, returning source image unchanged.")
+            H, W = source_image.shape[1:3]
+            blank_mask = torch.zeros((source_image.shape[0], H, W), dtype=torch.float32)
+            return (source_image, blank_mask)
+
         mm.soft_empty_cache()
         gc.collect()
         device = mm.get_torch_device()
@@ -810,6 +817,15 @@ class FaceShaperComposite:
         pbar = comfy.utils.ProgressBar(total_frames)
         for i in tqdm(range(total_frames), desc='Compositing..', total=total_frames):
             safe_index = min(i, len(crop_info["crop_info_list"]) - 1)
+
+            # Skip missing crop info entries
+            if crop_info["crop_info_list"][safe_index] is None or cropped_image is None:
+                log.warning(f"Skipping frame {safe_index} due to missing crop data.")
+                source_frame = source_image[safe_index].unsqueeze(0)
+                composited_image_list.append(source_frame.cpu())
+                out_mask_list.append(torch.zeros((1, 3, H, W), device="cpu"))
+                pbar.update(1)
+                continue
 
             #if mismatch_method == "cut":
             source_frame = source_image[safe_index].unsqueeze(0).to(device)

@@ -52,7 +52,7 @@ class CropperInsightFace(object):
             direction=direction
         )
 
-        if len(src_face) == 0:
+        if len(src_face) == 0 or face_index >= len(src_face):
             ret_dct = {}
             cropped_image_256 = None
             return ret_dct, cropped_image_256
